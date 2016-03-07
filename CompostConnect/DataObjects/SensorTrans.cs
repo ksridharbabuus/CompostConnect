@@ -11,7 +11,7 @@ namespace CompostConnect.DataObjects
         public string CreatedBy { get; set; }
         public string ModifiedBy { get; set; }
         [JsonIgnore]
-        public virtual Source  Sensor{ get; set; }
+        public virtual Sensor Sensor{ get; set; }
 
     }
 }
