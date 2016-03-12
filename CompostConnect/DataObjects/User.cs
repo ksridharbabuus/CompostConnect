@@ -15,6 +15,8 @@ namespace CompostConnect.DataObjects
         public string UserType { get; set; }
         public string Password { get; set; }
 
+        public bool IsActive { get; set; }
+
         public string CreatedBy { get; set; }
         public string ModifiedBy { get; set; }
         [JsonIgnore]
