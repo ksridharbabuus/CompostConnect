@@ -1,0 +1,43 @@
+<ion-view>
+	<div class="bar bar-stable">
+	   <h1 class="title">Register</h1>
+	</div>
+	<ion-content class="PageBody" ng-controller="RegisterPageCtrl">
+		<div class="list">
+		  <label class="item item-input item-floating-label">
+		    <span class="input-label">First Name</span>
+		    <input type="text" placeholder="First Name" ng-model="User.FName">
+		  </label>
+		  <label class="item item-input item-floating-label">
+		    <span class="input-label">Last Name</span>
+		    <input type="text" placeholder="Last Name" ng-model="User.LName">
+		  </label>
+		  <label class="item item-input item-floating-label">
+		    <span class="input-label">Email</span>
+		    <input type="text" placeholder="Email" ng-model="User.Email">
+		  </label>
+		  <label class="item item-input item-floating-label">
+		    <span class="input-label">Password</span>
+		    <input type="password" placeholder="Password" ng-model="User.Password">
+		  </label>
+		  <label class="item item-input item-floating-label">
+		    <span class="input-label">Contact Number</span>
+		    <input type="number" placeholder="Contact Number" ng-model="User.Phone">
+		  </label>
+		  <label class="item item-input item-select">
+		    <div class="input-label">
+		      User Type
+		    </div>
+		    <select style="width:90%" ng-model="User.TypeSelected">
+		      <option>Producer</option>
+		      <option >Consumer</option>
+		    </select>
+		  </label>
+		  <div class="row FlexHCenter" ng-click="DoRegister()">
+		  	<button class="button button-full button-positive">
+			  Register
+			</button>
+		  </div>
+		</div>
+	</ion-content>
+</ion-view>

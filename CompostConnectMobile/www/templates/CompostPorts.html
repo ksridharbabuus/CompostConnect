@@ -1,0 +1,19 @@
+<ion-view>
+	<div class="bar bar-stable">
+   		<h1 class="title">Compost Ports</h1>
+	</div>
+	<ion-content class="PageBody" ng-controller="CompostPortsPageCtrl">
+		<div class="list">
+			<div class="item NoPaddingMargin" ng-repeat="ComPort in CompostPortsList">
+				<div class="row">
+					<div class="col col-50 BlockHCenter">{{ComPort.SensorName}}</div>
+					<div class="col col-50 BlockHCenter">{{ComPort.Status}}</div>
+				</div>
+			</div>
+		</div>
+
+	</ion-content>
+	<ion-footer-bar class="bar-stable FlexHCenter" ui-sref="app.dashboard">
+		<span style="color:blue" >Register Compost Ports</span>
+	</ion-footer-bar>
+</ion-view>
