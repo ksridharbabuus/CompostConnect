@@ -1,0 +1,459 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+#include <stdlib.h>
+
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+
+/* This sample uses the _LL APIs of iothub_client for example purposes.
+That does not mean that MQTT only works with the _LL APIs.
+Simply changing the using the convenience layer (functions not having _LL)
+and removing calls to _DoWork will yield the same results. */
+
+#include <serializer.h>
+#include <iothub_client_ll.h>
+#include <iothubtransportmqtt.h>
+#include "threadapi.h"
+#include "platform.h"
+#include <dust_sensor.h>
+#include <gpio.h>
+#include "fanMode.h"
+
+int fanSpeed = 0;
+FanRunningModes currentFanMode = MODE_INVALID;
+PurifierStates currentPurifierState = STATE_INVALID;
+
+/*String containing Hostname, Device Id & Device Key in the format:             */
+/*  "HostName=<host_name>;DeviceId=<device_id>;SharedAccessKey=<device_key>"    */
+static const char* connectionString = "HostName=QaaS-Hub.azure-devices.net;DeviceId=QaaS-Pi1;SharedAccessKey=lqC9WOiQHogQPPCmz93AN2xpheiohejmvLO2KM2GjJI=";
+// Define the Model
+BEGIN_NAMESPACE(AirPurifier);
+
+DECLARE_MODEL(HoneywellAirPurifier,
+WITH_DATA(ascii_char_ptr, DeviceId),
+WITH_DATA(ascii_char_ptr, MacId),
+WITH_DATA(int, FanSpeed),
+WITH_DATA(float, PM2D5),
+WITH_DATA(float, PMD5),
+WITH_DATA(float, PM10),
+WITH_DATA(float, VOC),
+WITH_DATA(float, NO2),
+WITH_DATA(float, SO2),
+WITH_DATA(float, CO),
+WITH_DATA(ascii_char_ptr, DevStatus),
+WITH_ACTION(TurnFanOn),
+WITH_ACTION(TurnFanOff),
+WITH_ACTION(SETSPEED, ascii_char_ptr, Value),
+WITH_ACTION(SETMODE, ascii_char_ptr, Value),
+WITH_ACTION(SETSTATE, ascii_char_ptr, Value)
+
+);
+
+END_NAMESPACE(AirPurifier);
+
+DEFINE_ENUM_STRINGS(IOTHUB_CLIENT_CONFIRMATION_RESULT, IOTHUB_CLIENT_CONFIRMATION_RESULT_VALUES)
+
+EXECUTE_COMMAND_RESULT TurnFanOn(HoneywellAirPurifier* device)
+{
+    (void)device;
+    (void)printf("Turning fan on.\r\n");
+    return EXECUTE_COMMAND_SUCCESS;
+}
+
+EXECUTE_COMMAND_RESULT TurnFanOff(HoneywellAirPurifier* device)
+{
+    (void)device;
+    (void)printf("Turning fan off.\r\n");
+    return EXECUTE_COMMAND_SUCCESS;
+}
+
+int convertPointsToSpeed(int pts)
+{
+	/* WIP
+	 App sends data between 0-7
+	 0: Off Fan
+	 1-7 : Variable speed.
+	 For Fan, the pwm_speed can vary between 20-50,
+	 Hence the margin is 50-20 = 30.
+	 Each speed is 20 + {(speed-1) * 5}
+	*/
+
+	if (pts == 0) return 0;
+	else return (20 + ((pts - 1) * 5));
+}
+
+int SetFanSpeed(int speed_points)
+{
+	FILE* fp = NULL;
+	
+	fanSpeed = convertPointsToSpeed(speed_points);
+
+	//fp = fopen("./pwm_speed", "w+");
+	fp = fopen("/home/pi/gitrepo/Device/QaasClient/bin/pwm_speed", "w+");
+	if (NULL != fp)
+	{
+		fprintf(fp, "%d", fanSpeed);
+		fclose(fp);
+
+		
+		// Glow the lights now
+		// Reset the lights here
+		PinAction(D1, LED_DARK);
+		PinAction(D2, LED_DARK);
+		PinAction(D3, LED_DARK);
+		PinAction(D4, LED_DARK);
+		PinAction(D5, LED_DARK);
+		PinAction(D6, LED_DARK);
+		PinAction(D7, LED_DARK);
+		
+		switch (speed_points)
+		{
+			case 7:
+				PinAction(D7, LED_GLOW);
+			case 6:
+				PinAction(D6, LED_GLOW);
+			case 5:
+				PinAction(D5, LED_GLOW);
+			case 4: 
+				PinAction(D4, LED_GLOW);
+			case 3:
+				PinAction(D3, LED_GLOW);
+			case 2:
+				PinAction(D2, LED_GLOW);
+			case 1:
+				PinAction(D1, LED_GLOW);
+			case 0:
+				break;
+		}
+		
+		return 0;
+    }
+    else
+    {
+		printf ("pwm_speed file not found\n");
+		return 1;
+    }
+		
+}
+
+EXECUTE_COMMAND_RESULT SETSPEED(HoneywellAirPurifier* device, ascii_char_ptr Value)
+{
+	int app_FanSpeed = 0;
+	
+	if (currentPurifierState != STATE_DEACTIVATED)
+	{
+		app_FanSpeed =	atoi(Value);
+		
+		if (SetFanSpeed(app_FanSpeed) == 0)
+		{
+
+		}
+	}
+	
+	return EXECUTE_COMMAND_SUCCESS;
+}
+
+void TurnOffAllLights()
+{
+	PinAction(AUTO, LED_DARK);
+	PinAction(NIGHT_MODE, LED_DARK);
+
+	PinAction(D1, LED_DARK);
+	PinAction(D2, LED_DARK);
+	PinAction(D3, LED_DARK);
+	PinAction(D4, LED_DARK);
+	PinAction(D5, LED_DARK);
+	PinAction(D6, LED_DARK);
+	PinAction(D7, LED_DARK);
+
+	PinAction(CIRCLE, LED_DARK);
+	PinAction(WIFI_STATUS, LED_DARK);
+	PinAction(FILTER_BAD, LED_DARK);
+	PinAction(POWER, LED_DARK);
+}
+
+EXECUTE_COMMAND_RESULT SETMODE(HoneywellAirPurifier* device, ascii_char_ptr Value)
+{
+    (void)device;
+    (void)printf("Setting Purifier Mode to %s.\r\n", Value);
+
+	if (currentPurifierState != STATE_DEACTIVATED)
+	{
+		PinAction(AUTO, LED_DARK);
+		PinAction(NIGHT_MODE, LED_DARK);
+		
+		if (strcmp ("AUTO", Value) == 0)
+		{
+			currentFanMode = MODE_AUTO;
+			PinAction(AUTO, LED_GLOW);
+		}
+		else if (strcmp ("MANUAL", Value) == 0)
+		{
+			currentFanMode = MODE_MANUAL;
+		}
+		else if (strcmp ("NIGHT", Value) == 0)
+		{
+			currentFanMode = MODE_NIGHT;
+			TurnOffAllLights();
+			
+			PinAction(NIGHT_MODE, LED_GLOW);
+			PinAction(WIFI_STATUS, LED_GLOW);
+
+			SetFanSpeed(2);
+		}
+		else if (strcmp ("QUIET", Value) == 0)
+		{
+			currentFanMode = MODE_QUIET;
+			SetFanSpeed(2);
+		}
+	}
+
+	return EXECUTE_COMMAND_SUCCESS;
+}
+
+EXECUTE_COMMAND_RESULT SETSTATE(HoneywellAirPurifier* device, ascii_char_ptr Value)
+{
+    (void)device;
+    (void)printf("Setting Purifier State to %s.\r\n", Value);
+
+	if (strcmp("ACTIVE", Value) == 0)
+	{
+		currentPurifierState = STATE_ACTIVATED;
+	}
+	else if (strcmp("RESETBILL", Value) == 0)
+	{
+		currentPurifierState = STATE_RESET_BILLING;
+		Reset_BillingCycle();
+		printf ("******************* Billing Cycle Resetted *******************\n");
+	}
+	else
+	{
+		if (currentPurifierState != STATE_DEACTIVATED)
+		{
+			if (strcmp("OFF", Value) == 0)
+			{
+				currentPurifierState = STATE_OFF;
+				SetFanSpeed(0);
+			}
+			else if (strcmp("ON", Value) == 0)
+			{
+				currentPurifierState = STATE_ON;
+			}
+			else if (strcmp("DEACTIVE", Value) == 0)
+			{
+				currentPurifierState = STATE_DEACTIVATED;
+				TurnOffAllLights();
+			}
+		}
+	}
+	
+    return EXECUTE_COMMAND_SUCCESS;
+}
+
+void sendCallback(IOTHUB_CLIENT_CONFIRMATION_RESULT result, void* userContextCallback)
+{
+    int messageTrackingId = (intptr_t)userContextCallback;
+
+    (void)printf("Message Id: %d Received.\r\n", messageTrackingId);AirPurifier
+
+    (void)printf("Result Call Back Called! Result is: %s \r\n", ENUM_TO_STRING(IOTHUB_CLIENT_CONFIRMATION_RESULT, result));
+}
+
+static void sendMessage(IOTHUB_CLIENT_LL_HANDLE iotHubClientHandle, const unsigned char* buffer, size_t size)
+{
+    static unsigned int messageTrackingId;
+    IOTHUB_MESSAGE_HANDLE messageHandle = IoTHubMessage_CreateFromByteArray(buffer, size);
+    if (messageHandle == NULL)
+    {
+        printf("unable to create a new IoTHubMessage\r\n");
+    }
+    else
+    {
+        if (IoTHubClient_LL_SendEventAsync(iotHubClientHandle, messageHandle, sendCallback, (void*)(uintptr_t)messageTrackingId) != IOTHUB_CLIENT_OK)
+        {
+            printf("failed to hand over the message to IoTHubClient");
+        }
+        else
+        {
+            printf("IoTHubClient accepted the message for delivery\r\n");
+        }
+        IoTHubMessage_Destroy(messageHandle);
+    }
+    free((void*)buffer);
+    messageTrackingId++;
+}
+
+/*this function "links" IoTHub to the serialization library*/
+static IOTHUBMESSAGE_DISPOSITION_RESULT IoTHubMessage(IOTHUB_MESSAGE_HANDLE message, void* userContextCallback)
+{
+    IOTHUBMESSAGE_DISPOSITION_RESULT result;
+    const unsigned char* buffer;
+    size_t size;
+    if (IoTHubMessage_GetByteArray(message, &buffer, &size) != IOTHUB_MESSAGE_OK)
+    {   
+        printf("unable to IoTHubMessage_GetByteArray\r\n");
+        result = EXECUTE_COMMAND_ERROR;
+    }
+    else
+    {
+        /*buffer is not zero terminated*/
+        char* temp = malloc(size + 1);
+        if (temp == NULL)
+        {
+            printf("failed to malloc\r\n");
+            result = EXECUTE_COMMAND_ERROR;
+        }
+        else
+        {
+            memcpy(temp, buffer, size);
+            temp[size] = '\0';
+            EXECUTE_COMMAND_RESULT executeCommandResult = EXECUTE_COMMAND(userContextCallback, temp);
+            result =
+                (executeCommandResult == EXECUTE_COMMAND_ERROR) ? IOTHUBMESSAGE_ABANDONED :
+                (executeCommandResult == EXECUTE_COMMAND_SUCCESS) ? IOTHUBMESSAGE_ACCEPTED :
+                IOTHUBMESSAGE_REJECTED;
+            free(temp);
+        }
+    }
+    return result;AirPurifier
+}
+
+/* Returns the MAC Address
+   Params: int iNetType - 0: ethernet, 1: Wifi
+           char chMAC[18] - MAC Address in binary format
+   Returns: 0: success
+           -1: Failure
+    */
+
+int getMACAddress(int iNetType, char chMAC[18]) {
+  FILE* fp;
+  if(iNetType==0)
+     fp = fopen("/sys/class/net/wlan0/address", "r");
+  else
+     fp = fopen("/sys/class/net/eth0/address", "r");
+ 
+  fgets(chMAC, 18, (FILE*)fp);
+  fclose(fp);
+  return 0;
+}
+
+extern float pm05data;
+extern float pm25data;
+extern float pm10data;
+
+void qaas_mqtt_run(char param[])
+{
+    int count = 0;
+    char macAdrs[18];
+    unsigned char* destination;
+    size_t destinationSize;
+   
+
+    getMACAddress(0, macAdrs);
+     (void)printf("Mac Adress %s.\r\n", macAdrs); 
+    if (platform_init() != 0)
+    {
+        (void)printf("Failed on serializer_init\r\n");
+    }
+    else
+    {
+        if (serializer_init(NULL) != SERIALIZER_OK)
+        {
+            (void)printf("Failed on serializer_init\r\n");
+        }
+        else
+        { 
+            IOTHUB_CLIENT_LL_HANDLE iotHubClientHandle = IoTHubClient_LL_CreateFromConnectionString(connectionString, MQTT_Protocol);
+            srand((unsigned int)time(NULL));
+            int avgPrtclSize = 10;
+
+            if (iotHubClientHandle == NULL)
+            {
+                (void)printf("Failed on IoTHubClient_LL_Create\r\n");
+            }
+            else
+            { 
+                HoneywellAirPurifier* deviceInfo = CREATE_MODEL_INSTANCE(AirPurifier, HoneywellAirPurifier);
+                if (deviceInfo == NULL)
+                {
+                    (void)printf("Failed on CREATE_MODEL_INSTANCE\r\n");
+                }
+                else
+                {
+                    if (IoTHubClient_LL_SetMessageCallback(iotHubClientHandle, IoTHubMessage, deviceInfo) != IOTHUB_CLIENT_OK)
+                    {
+                        printf("unable to IoTHubClient_SetMessageCallback\r\n");
+                    }
+                    else
+                    {
+                        deviceInfo->DeviceId = "AirPur01";
+                        deviceInfo->MacId = macAdrs;
+                       
+
+                        /* wait for commands */
+                        while (1)
+                        {
+ 
+                            deviceInfo->FanSpeed = fanSpeed;
+                            //deviceInfo->PrtclSize = avgPrtclSize + (rand() % 4 + 2);
+                            //pm05data = pm05data_1;
+                            //pm25data = pm25data_1;
+                            //pm10data = pm10data_1; 
+
+                            deviceInfo->PMD5 = pm05data;
+                            deviceInfo->PM2D5 = pm25data;
+                            deviceInfo->PM10 = pm10data;
+                            deviceInfo->VOC = 10.0;
+                            deviceInfo->NO2 = 24.0;
+                            deviceInfo->SO2 = 32.0;
+                            deviceInfo->CO = 5.0;
+                            //printf("Data = %f %f %f %f\n", deviceInfo->VOC, deviceInfo->NO2, deviceInfo->SO2, deviceInfo->CO);
+
+                            if(count%50 == 0)
+                            {
+                            //if (SERIALIZE(&destination, &destinationSize, deviceInfo->DeviceId, deviceInfo->MacId, deviceInfo->FanSpeed, deviceInfo->PMD5, deviceInfo->PM2D5, deviceInfo->PM10, deviceInfo->VOC, deviceInfo->NO2, deviceInfo->SO2, deviceInfo->CO, deviceInfo->DevStatus) != IOT_AGENT_OK)
+                            if (SERIALIZE(&destination, &destinationSize, deviceInfo->DeviceId, deviceInfo->MacId, deviceInfo->FanSpeed, deviceInfo->DevStatus) != IOT_AGENT_OK)
+                            {
+                                (void)printf("Failed to serialize\r\n");
+                            }
+                            else
+                            {
+
+                                IOTHUB_MESSAGE_HANDLE messageHandle = IoTHubMessage_CreateFromByteArray(destination, destinationSize);
+                                if (messageHandle == NULL)
+                                {
+                                    printf("unable to create a new IoTHubMessage\r\n");
+                                }
+                                else
+                                {
+                                    if (IoTHubClient_LL_SendEventAsync(iotHubClientHandle, messageHandle, sendCallback, (void*)1) != IOTHUB_CLIENT_OK)
+                                    {
+                                        printf("failed to hand over the message to IoTHubClient");
+                                    }
+                                    else
+                                    {
+                                        printf("IoTHubClient accepted the message for delivery\r\n");
+                                    }
+
+                                    IoTHubMessage_Destroy(messageHandle);
+                                }
+                                free(destination);
+                            }
+                            }
+                            IoTHubClient_LL_DoWork(iotHubClientHandle);
+                            count++;
+                            ThreadAPI_Sleep(100);
+                        }
+                    }
+
+                    DESTROY_MODEL_INSTANCE(deviceInfo);
+                }
+                IoTHubClient_LL_Destroy(iotHubClientHandle);
+            }
+            serializer_deinit();
+        }
+        platform_deinit();
+    }
+}
