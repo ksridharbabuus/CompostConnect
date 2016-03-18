@@ -1,6 +1,7 @@
 var appCtrls = angular.module('starter.controllers',[])
-.controller('LoginCtrl',function(){
+.controller('LoginCtrl',function($ionicNavBarDelegate){
 	// alert("loginCtrl");
+	$ionicNavBarDelegate.showBackButton(false);
 })
 .controller('ProdHomeCtrl',function(){
 	// alert("loginCtrl");
@@ -11,12 +12,38 @@ var appCtrls = angular.module('starter.controllers',[])
 .controller('RegisterCtrl',function(){
 	// alert("loginCtrl");
 })
-.controller('CompostPortsCtrl',function($scope,WebServiceCall,$state){
+.controller('CompostPortsCtrl',function($scope,WebServiceCall,$state,$ionicNavBarDelegate){
 	// alert("loginCtrl");
+	$scope.$on( "$ionicView.enter", function( scopes, states ) {
+		$ionicNavBarDelegate.showBackButton(false);
+    });
 	
 })
-.controller('RegCompostPortsCtrl',function(){
+.controller('RegCompostPortsCtrl',function($ionicNavBarDelegate,$state){
 	// alert("loginCtrl");
+	$ionicNavBarDelegate.showBackButton(true);
+	
+})
+.controller('CompostPortsPageViewCtrl',function($ionicNavBarDelegate,$state,$scope){
+	// alert("loginCtrl");
+	$ionicNavBarDelegate.showBackButton(true);
+	$scope.doLogout =function(){
+			// alert("came");
+			window.localStorage.clear();
+			$state.go('login');
+	}
+	$scope.AddSource = function(){
+		$state.go('RegisterSource');
+	}
+})
+.controller('FindNearByViewCtrl',function($ionicNavBarDelegate,$state,$scope){
+	// alert("loginCtrl");
+	$ionicNavBarDelegate.showBackButton(true);
+	$scope.doLogout =function(){
+			// alert("came");
+			window.localStorage.clear();
+			$state.go('login');
+		}	
 })
 .controller('LoginPageCtrl',function($scope,$state,WebServiceCall){
 	$scope.DoLogin = function(){
@@ -34,13 +61,17 @@ var appCtrls = angular.module('starter.controllers',[])
 			console.log(JSON.stringify(UserDetails));
 			window.localStorage["UserName"] = username;
 			//var loginusrtype = "PRODUCER";//CONSUMER
+			debugger
 			if(UserTypeReturn.toLowerCase()==UserProducerType.toLowerCase())
 			{
 				
+				window.localStorage["Username"]=username;
 				$state.go('CompostPorts');	
+				
 			}
 			else if(UserTypeReturn.toLowerCase()==UserConsumerType.toLowerCase())
 			{
+				window.localStorage["Username"]=username;
 				$state.go('FindNearBy');
 			}
 			WebServiceCall.StopSpin();
@@ -97,6 +128,8 @@ var appCtrls = angular.module('starter.controllers',[])
 							// {"SensorName":"Sensor3","Status":"empty"}
 							// ];
 	// $scope.CompostPortsList = ArrCompostPorts;
+	
+	
 	var CompostPortsGetURL = GetCompostPortsURL;
 	var CompostPortsStatusURL = GetCompostPortsStausURL;
 	var LoggedinUsername = window.localStorage["UserName"];
@@ -114,7 +147,7 @@ var appCtrls = angular.module('starter.controllers',[])
 				var UserPort = UserCompostPorts[i];
 				console.log("up:"+UserPort.SensorName);
 				// console.log(JSON.stringify(UserPort));
-				AllSensorsArr.push(UserPort.SensorName);
+				AllSensorsArr.push(UserPort.DisplayName);
 			}
 			var CompostPortsStatusWithIDs = CompostPortsStatusURL+"/"+AllSensorsArr.join('|');
 			console.log(AllSensorsArr.join('|'));
@@ -302,4 +335,25 @@ var appCtrls = angular.module('starter.controllers',[])
 			  console.log("err"+JSON.stringify(err));
 		  });
 	  }
+})
+
+.controller('RegSourceViewCtrl',function($scope,$state,WebServiceCall){
+	// alert("came");
+	// $ionicNavBarDelegate.showBackButton(true);
+	$scope.goBack = function(){
+		$state.go('CompostPorts');
+	}
+	
+	$scope.DoRegSrc = function(){
+		var address = $scope.Address;
+		var contactname = $scope.ContactName;
+		var contactnumber = $scope.ContactNumber;
+		var alt1 = $scope.AltContact1;
+		var alt2 = $scope.AltContact2;
+		var stype = $scope.SourceType;
+		var lattitude = $scope.Lattitude;
+		var longitude = $scope.Longitude;
+		$state.go("FindNearBy");
+	}
 });
+

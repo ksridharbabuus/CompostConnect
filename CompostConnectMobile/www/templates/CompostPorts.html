@@ -1,10 +1,25 @@
-<ion-view view-title="Compost Ports">
+<ion-view view-title="Compost Ports" ng-controller="CompostPortsPageViewCtrl">
 	<!-- <div class="bar bar-stable">
 		
    		<h1 class="title">Compost Ports</h1>
 	</div> -->
+	<ion-nav-buttons side="right">
+      <i class="ion-log-out" style="font-size:2.2em" ng-click="doLogout()"></i>
+	  </ion-nav-buttons>
+	<ion-nav-buttons side="left">
+      <i class="ion-android-add-circle" style="font-size:2.2em" ng-click="AddSource()"></i>
+	  </ion-nav-buttons>
 	<ion-content class="PageBody" ng-controller="CompostPortsPageCtrl">
 		<div class="list">
+			<div class="item item-divider">
+			Your Compost Ports
+			</div>
+			<div class="item NoPaddingMargin">
+				<div class="row">
+					<div class="col col-50 BlockHCenter"><strong>Name</strong></div>
+					<div class="col col-50 BlockHCenter"><strong>Status</strong></div>
+				</div>
+			</div>
 			<div class="item NoPaddingMargin" ng-repeat="ComPort in CompostPortsList">
 				<div class="row">
 					<div class="col col-50 BlockHCenter">{{ComPort.deviceid}}</div>

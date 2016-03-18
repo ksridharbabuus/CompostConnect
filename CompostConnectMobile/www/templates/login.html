@@ -6,7 +6,13 @@
 		<ion-list>
 	<form name="LoginForm" class="loginForm" novalidate>
 		<div class="list list-inset classLoginForm" ng-controller="LoginPageCtrl">
-		<div style="margin-top: 50%">
+		<div style="margin-top: 5%;font-size:2em">
+			<div class="row" style="    justify-content: center;">
+				<span><strong style="color:#33cd5f">Compost Connect</strong></span>
+			</div>
+			<div class="row" style="    margin-top: 12%; margin-bottom:5%; justify-content: center;">
+				<img src="img/loginimg.png" style="    width: 25%;height: 100%;">
+			</div>
 			<div class="row">
 			<div class="col"> 
 			 <label class="item item-input"  > <!-- ng-class="{RedBorder:LoginForm.userId.$error.pattern ||ValidUsername ===0}" -->
@@ -29,7 +35,7 @@
 			 <!-- submit button -->
 			<div class="row">
 			<div class="col">
-				 <button class="button button-block button-positive" 
+				 <button class="button button-block button-balanced" 
 				  ng-disabled="LoginForm.userId.$pristine || LoginForm.password.$pristine || 
 								LoginForm.userId.$error.required || LoginForm.password.$error.required" 
 				  ng-click="DoLogin();">Login</button>    <!-- || LoginForm.userId.$error.pattern -->

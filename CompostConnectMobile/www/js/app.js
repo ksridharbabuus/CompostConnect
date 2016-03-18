@@ -5,8 +5,8 @@
 // the 2nd parameter is an array of 'requires'
 angular.module('starter', ['ionic',"starter.controllers","ngCordova","starter.services"])
 
-.run(function($ionicPlatform) {
-  $ionicPlatform.ready(function() {
+.run(function($ionicPlatform,$rootScope) {
+  $ionicPlatform.ready(function($rootScope) {
     if(window.cordova && window.cordova.plugins.Keyboard) {
       // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
       // for form inputs)
@@ -20,6 +20,25 @@ angular.module('starter', ['ionic',"starter.controllers","ngCordova","starter.se
     if(window.StatusBar) {
       StatusBar.styleDefault();
     }
+  });
+  $rootScope.$on("$stateChangeStart",function(event, toState, toParams, fromState, fromParams){
+	
+	resolve:{
+		// alert(toState.name+""+fromState.name);
+		// debugger
+		if(toState.name=="login" && fromState.name!="login")
+		{
+			// debugger
+			var creds = window.localStorage["Username"];
+			// alert(creds);
+			if(creds!=null && creds!=undefined && creds!="")
+			{
+				event.preventDefault();
+				return;
+			}
+			
+		}
+	}
   });
 })
 .config(function($stateProvider, $urlRouterProvider) {
