@@ -1,4 +1,15 @@
 {
   "name": "CompostConnect",
-  "app_id": ""
+  "app_id": "",
+  "proxies":[
+	{
+      "path": "/RegURL",
+      "proxyUrl":  "http://qaasapi.azurewebsites.net/api/CompostUsers"
+    },
+	{
+      "path": "/Schedule",
+      "proxyUrl":  "http://qaasapi.azurewebsites.net/speed"
+    }
+	
+  ]
 }

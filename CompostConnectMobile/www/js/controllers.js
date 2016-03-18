@@ -11,8 +11,9 @@ var appCtrls = angular.module('starter.controllers',[])
 .controller('RegisterCtrl',function(){
 	// alert("loginCtrl");
 })
-.controller('CompostPortsCtrl',function(){
+.controller('CompostPortsCtrl',function($scope,WebServiceCall,$state){
 	// alert("loginCtrl");
+	
 })
 .controller('RegCompostPortsCtrl',function(){
 	// alert("loginCtrl");
@@ -31,6 +32,7 @@ var appCtrls = angular.module('starter.controllers',[])
 			var UserDetails = resp;
 			var UserTypeReturn = UserDetails.UserType;
 			console.log(JSON.stringify(UserDetails));
+			window.localStorage["UserName"] = username;
 			//var loginusrtype = "PRODUCER";//CONSUMER
 			if(UserTypeReturn.toLowerCase()==UserProducerType.toLowerCase())
 			{
@@ -49,47 +51,122 @@ var appCtrls = angular.module('starter.controllers',[])
 		
 	}
 })
-.controller('RegisterPageCtrl',function($scope,$state){
+.controller('RegisterPageCtrl',function($scope,$state,WebServiceCall){
 	$scope.DoRegister = function(){
 		console.log("register");
-
-		var FName = $scope.User.FName;
-		var LName = $scope.User.LName;
-		var Email = $scope.User.Email;
-		var pwd = $scope.User.Password;
-		var phoneno = $scope.User.Phone;
-		var typesel = $scope.User.TypeSelected;
-
+		var UName = $scope.UName;
+		var FName = $scope.FName;
+		var LName = $scope.LName;
+		var Email = $scope.Email;
+		var pwd = $scope.Password;
+		var phoneno = $scope.Phone;
+		var typesel = $scope.TypeSelected;
+		var UserRegInput = {
+			  "userid": UName,
+			  "FirstName": FName,
+			  "LastName": LName,
+			  "Email": Email,
+			  "UserType": typesel,
+			  "Password": pwd
+		};
+		var UserRegURL = UserRegistrationURL; 
 		// alert(typesel);
 		var UserProducerType = "PRODUCER"; 
 		var UserConsumerType = "CONSUMER"; 
-		if(typesel.toUpperCase()==UserProducerType)
-		{
-			$state.go('ProducerHome');	
-		}
-		else if(typesel.toUpperCase()==UserConsumerType)
-		{
-			$state.go('ConsumerHome');
-		}
+		WebServiceCall.StartSpin();
+		WebServiceCall.WSCall(UserRegistrationURL,UserRegInput).then(function(RegReturn){
+			console.log("RegReturn:"+JSON.stringify(RegReturn));
+			if(typesel.toUpperCase()==UserProducerType)
+			{
+				//$state.go('CompostPorts');	
+			}
+			else if(typesel.toUpperCase()==UserConsumerType)
+			{
+				//$state.go('FindNearBy');
+			}
+			
+		},function(err){
+			alert("registration failed:"+JSON.stringify(err));
+		});
+		
 	}
 })
-.controller('CompostPortsPageCtrl',function($scope,$state){
-	var ArrCompostPorts = [{"SensorName":"Sensor1","Status":"full"},
-							{"SensorName":"Sensor2","Status":"full"},
-							{"SensorName":"Sensor3","Status":"empty"}
-							];
-	$scope.CompostPortsList = ArrCompostPorts;
+.controller('CompostPortsPageCtrl',function($scope,$state,WebServiceCall){
+	// var ArrCompostPorts = [{"SensorName":"Sensor1","Status":"full"},
+							// {"SensorName":"Sensor2","Status":"full"},
+							// {"SensorName":"Sensor3","Status":"empty"}
+							// ];
+	// $scope.CompostPortsList = ArrCompostPorts;
+	var CompostPortsGetURL = GetCompostPortsURL;
+	var CompostPortsStatusURL = GetCompostPortsStausURL;
+	var LoggedinUsername = window.localStorage["UserName"];
+	if(LoggedinUsername!=null&&LoggedinUsername!=undefined)
+	{
+		var CompostPortsGetURLUser = CompostPortsGetURL+"?user="+LoggedinUsername;
+		WebServiceCall.StartSpin();
+		WebServiceCall.WSCallGet(CompostPortsGetURLUser).then(function(CompostPortsReturn){
+			var UserCompostPorts = CompostPortsReturn;
+			// console.log(JSON.stringify(UserCompostPorts));
+			var AllSensorsArr = [];
+			for(var i=0;i<UserCompostPorts.length;i++)
+			{
+				
+				var UserPort = UserCompostPorts[i];
+				console.log("up:"+UserPort.SensorName);
+				// console.log(JSON.stringify(UserPort));
+				AllSensorsArr.push(UserPort.SensorName);
+			}
+			var CompostPortsStatusWithIDs = CompostPortsStatusURL+"/"+AllSensorsArr.join('|');
+			console.log(AllSensorsArr.join('|'));
+			WebServiceCall.WSCallGet(CompostPortsStatusWithIDs).then(function(StatusReturn){
+				console.log(JSON.stringify(StatusReturn));
+				$scope.CompostPortsList = StatusReturn;
+				WebServiceCall.StopSpin();
+			},function(err){
+				console.log("err"+JSON.stringify(err));
+			});
+		},function(err){
+			console.log("err comports:"+JSON.stringify(err));
+		});
+	}
+	else
+	{
+		$state.go('login');
+	}
 })
+
 .controller('RegSrcPageCtrl',function(){
 
 })
 .controller('RegisterSourceCtrl',function(){
 	
 })
-.controller('FindNearByCtrl',function($scope,$cordovaGeolocation){
+
+.controller('FindNearByCtrl',function($scope,$cordovaGeolocation,WebServiceCall,$compile){
 	var options = {timeout: 10000, enableHighAccuracy: true};
 	var latlons = [{lat:"12.9450362",lon:"77.6970354",title:"msg1"},{lat:"12.9550364",lon:"77.6890356",title:"msg2"},{lat:"12.9950366",lon:"77.6800358",title:"msg3"}];
+	var GlobalMarkersData;
+	var GlobalMap;
 	
+	var GreenPinColor = "69fe75";//"FE7569";
+	var YellowPinColor = "FFFF00";
+	var RedPinColor = "FE7569";
+	var RedPinImage = new google.maps.MarkerImage("http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=%E2%80%A2|" + RedPinColor,
+		new google.maps.Size(21, 34),
+		new google.maps.Point(0,0),
+		new google.maps.Point(10, 34));
+	var YellowPinImage = new google.maps.MarkerImage("http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=%E2%80%A2|" + YellowPinColor,
+		new google.maps.Size(21, 34),
+		new google.maps.Point(0,0),
+		new google.maps.Point(10, 34));
+	var GreenPinImage = new google.maps.MarkerImage("http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=%E2%80%A2|" + GreenPinColor,
+		new google.maps.Size(21, 34),
+		new google.maps.Point(0,0),
+		new google.maps.Point(10, 34));
+	var pinShadow = new google.maps.MarkerImage("http://chart.apis.google.com/chart?chst=d_map_pin_shadow",
+		new google.maps.Size(40, 37),
+		new google.maps.Point(0, 0),
+		new google.maps.Point(12, 35));
 	  $cordovaGeolocation.getCurrentPosition(options).then(function(position){
 	 
 		var latLng = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
@@ -100,65 +177,129 @@ var appCtrls = angular.module('starter.controllers',[])
 		  zoom: 15,
 		  mapTypeId: google.maps.MapTypeId.ROADMAP
 		};
+		var MarkersURL = GetCompostPortsURL;
+		var MarkersURLAll = MarkersURL+"?user=All"; 
 		var content="yes, click";
-	 var markers = [
-    {
-        "title": 'Aksa Beach',
-        "lat": '19.1759668',
-        "lng": '72.79504659999998',
-        "description": 'Aksa Beach is a popular beach and a vacation spot in Aksa village at Malad, Mumbai.'
-    },
-    {
-        "title": 'Juhu Beach',
-        "lat": '19.0883595',
-        "lng": '72.82652380000002',
-        "description": 'Juhu Beach is one of favourite tourist attractions situated in Mumbai.'
-    },
-    {
-        "title": 'Girgaum Beach',
-        "lat": '18.9542149',
-        "lng": '72.81203529999993',
-        "description": 'Girgaum Beach commonly known as just Chaupati is one of the most famous public beaches in Mumbai.'
-    },
-    {
-        "title": 'Jijamata Udyan',
-        "lat": '18.979006',
-        "lng": '72.83388300000001',
-        "description": 'Jijamata Udyan is situated near Byculla station is famous as Mumbai (Bombay) Zoo.'
-    },
-    {
-        "title": 'Sanjay Gandhi National Park',
-        "lat": '19.2147067',
-        "lng": '72.91062020000004',
-        "description": 'Sanjay Gandhi National Park is a large protected area in the northern part of Mumbai city.'
-    }
-    ];
-		$scope.map = new google.maps.Map(document.getElementById("map"), mapOptions);
-		var infoWindow = new google.maps.InfoWindow();
-		var bounds = new google.maps.LatLngBounds();
+		WebServiceCall.WSCallGet(MarkersURLAll).then(function(resp){
+			var markers = resp;
+			GlobalMarkersData = markers;
+			$scope.map = new google.maps.Map(document.getElementById("map"), mapOptions);
+			GlobalMap =$scope.map;
+			var infoWindow = new google.maps.InfoWindow();
+			var bounds = new google.maps.LatLngBounds();
+			
+				
+			for (var i = 0; i < markers.length; i++) {
+				var data = markers[i];
+				var myLatlng = new google.maps.LatLng(data.lat, data.long);
+				var marker = new google.maps.Marker({
+					position: myLatlng,
+					map: $scope.map,
+					title: data.title,
+					icon:RedPinImage,
+					shadow:pinShadow
+				});
+				bounds.extend(myLatlng);
+				//Attach click event to the marker.
+				(function (marker, data) {
+					var infoWindowContent = "<div style = 'width:200px;min-height:40px'>"+"<p>" + data.DisplayName + "</p>"
+											+ "<button ng-click="+"\""+"MarkerClick('"+data.SensorName+"')"+"\""+">"+"Schedule Pick"+"</button>"+"</div>";
+						console.log(infoWindowContent);
+					var compiled = $compile(infoWindowContent)($scope);
+					// console.log(compiled["body"]);
+					google.maps.event.addListener(marker, "click", function (e) {
+						//Wrap the content inside an HTML DIV in order to set height and width of InfoWindow.
+						infoWindow.setContent(compiled[0]);
+						infoWindow.open($scope.map, marker);
+					});
+				})(marker, data);
+				$scope.map.fitBounds(bounds);
+			}
+		});
 		
-		for (var i = 0; i < markers.length; i++) {
-            var data = markers[i];
-            var myLatlng = new google.maps.LatLng(data.lat, data.lng);
-            var marker = new google.maps.Marker({
-                position: myLatlng,
-                map: $scope.map,
-                title: data.title
-            });
-			bounds.extend(myLatlng);
-            //Attach click event to the marker.
-            (function (marker, data) {
-                google.maps.event.addListener(marker, "click", function (e) {
-                    //Wrap the content inside an HTML DIV in order to set height and width of InfoWindow.
-                    infoWindow.setContent("<div style = 'width:200px;min-height:40px'>" + data.description + "</div>");
-                    infoWindow.open($scope.map, marker);
-                });
-            })(marker, data);
-			$scope.map.fitBounds(bounds);
-		}
 		
- 
 	  }, function(error){
 		console.log("Could not get location");
 	  });
+	  
+	  $scope.MarkerClick = function(sid){
+		  
+		  var ScheduleURL = SchedulePickupURL;
+		  var ConstSID = "QaaS-Pi1";
+		  // sid = "QaaS-Pi1";//comment this line if u can insert any
+		  var input={
+			  "Id":ConstSID,
+			  "Value":1
+		  };
+		  var infoWindowComplete = new google.maps.InfoWindow();
+		  console.log("input"+JSON.stringify(input));
+		  WebServiceCall.WSCall(ScheduleURL,input).then(function(resp){
+			  console.log("resp:"+JSON.stringify(resp));
+			  //find lat long of sid
+			  for(var n=0;n<GlobalMarkersData.length;n++)
+			  {
+				  if(sid==GlobalMarkersData[n].SensorName)
+				  {
+					  var ScheduledSensorData = GlobalMarkersData[n];
+					  var pickLatLong = new google.maps.LatLng(ScheduledSensorData.lat,ScheduledSensorData.long);
+					  // alert(GlobalMarkersData[n].lat);
+					var marker = new google.maps.Marker({
+						position: pickLatLong,
+						map: GlobalMap,
+						title: "some",
+						icon:YellowPinImage,
+						shadow:pinShadow
+					});
+					(function (marker) {
+						var infoWindowContent = "<div style = 'width:200px;min-height:40px'>"+"<p>" + ScheduledSensorData.DisplayName + "</p>"
+												+ "<button ng-click="+"\""+"MarkerClickComplete('"+ScheduledSensorData.SensorName+"')"+"\""+">"+"Picked"+"</button>"+"</div>";
+							console.log(infoWindowContent);
+						var compiled = $compile(infoWindowContent)($scope);
+						// console.log(compiled["body"]);
+						google.maps.event.addListener(marker, "click", function (e) {
+							//Wrap the content inside an HTML DIV in order to set height and width of InfoWindow.
+							infoWindowComplete.setContent(compiled[0]);
+							infoWindowComplete.open($scope.map, marker);
+						});
+					})(marker);
+				  }
+			  }
+			  $scope.MarkerClickComplete =function(SensorId){
+				  var ScheduleURL = SchedulePickupURL;
+				  var ConstSID = "QaaS-Pi1";
+				  // sid = "QaaS-Pi1";//comment this line if u can insert any
+				  var input={
+					  "Id":ConstSID,
+					  "Value":0
+				  };
+				  var infoWindowComplete = new google.maps.InfoWindow();
+				  console.log("input"+JSON.stringify(input));
+				  WebServiceCall.WSCall(ScheduleURL,input).then(function(resp){
+				  console.log("si:"+JSON.stringify(SensorId));
+				  // console.log(SensorInfo.lat);
+				  var sid = SensorId;
+				  for(var n=0;n<GlobalMarkersData.length;n++)
+				  {
+					  if(sid==GlobalMarkersData[n].SensorName)
+					  {
+						  var PickedSensorInfo = GlobalMarkersData[n];
+						  var pickedLatLong = new google.maps.LatLng(PickedSensorInfo.lat,PickedSensorInfo.long);
+							var marker = new google.maps.Marker({
+									position: pickedLatLong,
+									map: GlobalMap,
+									title: "some",
+									icon:GreenPinImage,
+									shadow:pinShadow
+								});
+					  }
+				  }
+				});
+				  
+			  }
+			  
+			  
+		  },function(err){
+			  console.log("err"+JSON.stringify(err));
+		  });
+	  }
 });

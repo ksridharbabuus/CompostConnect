@@ -1,43 +1,56 @@
-<ion-view>
+<ion-view view-title="User Registration">
 	<div class="bar bar-stable">
 	   <h1 class="title">Register</h1>
 	</div>
 	<ion-content class="PageBody" ng-controller="RegisterPageCtrl">
+		<form name="UserRegForm" novalidate>
 		<div class="list">
 		  <label class="item item-input item-floating-label">
-		    <span class="input-label">First Name</span>
-		    <input type="text" placeholder="First Name" ng-model="User.FName">
+		    <span class="input-label">User Name *</span>
+		    <input type="text" placeholder="User Name" name="UName" ng-model="UName" required>
 		  </label>
 		  <label class="item item-input item-floating-label">
-		    <span class="input-label">Last Name</span>
-		    <input type="text" placeholder="Last Name" ng-model="User.LName">
+		    <span class="input-label">First Name *</span>
+		    <input type="text" placeholder="First Name" name="FName" ng-model="FName" required>
 		  </label>
 		  <label class="item item-input item-floating-label">
-		    <span class="input-label">Email</span>
-		    <input type="text" placeholder="Email" ng-model="User.Email">
+		    <span class="input-label">Last Name *</span>
+		    <input type="text" placeholder="Last Name" name="LName" ng-model="LName" required>
 		  </label>
 		  <label class="item item-input item-floating-label">
-		    <span class="input-label">Password</span>
-		    <input type="password" placeholder="Password" ng-model="User.Password">
+		    <span class="input-label">Email *</span>
+		    <input type="Email" placeholder="Email" name="Email" ng-model="Email" required>
 		  </label>
 		  <label class="item item-input item-floating-label">
-		    <span class="input-label">Contact Number</span>
-		    <input type="number" placeholder="Contact Number" ng-model="User.Phone">
+		    <span class="input-label">Password *</span>
+		    <input type="password" placeholder="Password" name="Password" ng-model="Password" required>
+		  </label>
+		  <label class="item item-input item-floating-label">
+		    <span class="input-label">Contact Number *</span>
+		    <input type="number" placeholder="Contact Number" name="Phone" ng-model="Phone" required>
 		  </label>
 		  <label class="item item-input item-select">
 		    <div class="input-label">
-		      User Type
+		      User Type *
 		    </div>
-		    <select style="width:90%" ng-model="User.TypeSelected">
+		    <select style="width:90%" ng-model="TypeSelected" name="TypeSelected" required>
 		      <option>Producer</option>
 		      <option >Consumer</option>
 		    </select>
 		  </label>
-		  <div class="row FlexHCenter" ng-click="DoRegister()">
-		  	<button class="button button-full button-positive">
+		  <div class="row FlexHCenter" >
+		  	<button class="button button-full button-positive" ng-click="DoRegister()"
+					ng-disabled="UserRegForm.FName.$prisline || UserRegForm.FName.$error.required
+								|| UserRegForm.UName.$prisline || UserRegForm.UName.$error.required
+								|| UserRegForm.LName.$prisline || UserRegForm.LName.$error.required
+								|| UserRegForm.Email.$prisline || UserRegForm.Email.$error.required
+								|| UserRegForm.Password.$prisline || UserRegForm.Password.$error.required
+								||  UserRegForm.Phone.$prisline || UserRegForm.Phone.$error.required
+								|| UserRegForm.TypeSelected.$prisline || UserRegForm.TypeSelected.$error.required">
 			  Register
 			</button>
 		  </div>
 		</div>
+		</form>
 	</ion-content>
 </ion-view>
