@@ -1,7 +1,12 @@
 <ion-view>
-	<div class="bar bar-stable">
-   		<h1 class="title">Compost Ports</h1>
-	</div>
+	<!-- <div class="bar bar-stable"> -->
+   		
+	<ion-nav-bar>
+		<h1 class="title">Compost Ports</h1>
+		<ion-nav-back-button>
+		</ion-nav-back-button>
+	</ion-nav-bar>
+	<!-- </div> -->
 	<ion-content class="PageBody" ng-controller="CompostPortsPageCtrl">
 		<div class="list">
 			<div class="item NoPaddingMargin" ng-repeat="ComPort in CompostPortsList">
