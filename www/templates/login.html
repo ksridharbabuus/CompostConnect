@@ -1,0 +1,56 @@
+<ion-view title="Login">
+<div class="bar bar-stable">
+   <h1 class="title">Login</h1>
+</div>
+	<ion-content>
+		<ion-list>
+	<form name="LoginForm" class="loginForm" novalidate>
+		<div class="list list-inset classLoginForm" ng-controller="LoginPageCtrl">
+		<div style="margin-top: 5%;font-size:2em">
+			<div class="row" style="    justify-content: center;">
+				<span><strong style="color:#33cd5f">Compost Connect</strong></span>
+			</div>
+			<div class="row" style="    margin-top: 12%; margin-bottom:5%; justify-content: center;">
+				<img src="img/loginimg.png" style="    width: 25%;height: 100%;">
+			</div>
+			<div class="row">
+			<div class="col"> 
+			 <label class="item item-input"  > <!-- ng-class="{RedBorder:LoginForm.userId.$error.pattern ||ValidUsername ===0}" -->
+				<input type="text"  ng-model="userId" class="form-control col-sm-2 col-xs-11 col-md-2" placeholder="Username" name="userId" autofocus required />   <!--ng-init="ValidUsername =1;ValidPassword=1" ng-pattern='/^[e,E,h,H][0-9]{6}$/' ng-minlength=3 ng-maxlength=7 -->
+			  </label>
+			  </div>
+			</div>
+			
+			<!-- password -->
+			<div class="row">
+			<div class="col">
+			  <label class="item item-input" ng-class="{RedBorder:ValidPassword ===0}">
+				<input type="password" class="form-control" name="password" placeholder="Password" ng-model="password" required/>
+				
+			  </label>
+			  </div>
+			</div>
+			
+			
+			 <!-- submit button -->
+			<div class="row">
+			<div class="col">
+				 <button class="button button-block button-balanced" 
+				  ng-disabled="LoginForm.userId.$pristine || LoginForm.password.$pristine || 
+								LoginForm.userId.$error.required || LoginForm.password.$error.required" 
+				  ng-click="DoLogin();">Login</button>    <!-- || LoginForm.userId.$error.pattern -->
+			</div>
+			</div>
+
+			<div class="row FlexHCenter">
+				<button class="button button-clear button-positive" ui-sref="Register">
+				  Register
+				</button>
+			</div>
+		</div>
+		 <!--  <button class="button button-clear button-assertive" ng-click="Logout()">Test Logout</button>  -->
+		</div>
+	</form>
+	</ion-list>
+	</ion-content>
+</ion-view>
