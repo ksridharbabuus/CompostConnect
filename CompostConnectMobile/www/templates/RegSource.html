@@ -1,0 +1,53 @@
+<ion-view view-title="Register Source" ng-controller="RegSourceViewCtrl">
+<!-- <div class="bar bar-stable">
+   <h1 class="title">Register Source</h1>
+</div> -->
+	<ion-nav-buttons side="left">
+      <i class="ion-android-arrow-back" style="font-size:2.2em" ng-click="goBack()"></i>
+	  </ion-nav-buttons>
+	<ion-content class="PageBody" ng-controller="RegSrcPageCtrl">
+	<form name="RegSourceForm" novalidate>
+		<div class="list">
+		  <label class="item item-input item-floating-label">
+		    <span class="input-label">Address</span>
+		    <input type="text" placeholder="Address" name="Address" ng-model="Address" required>
+		  </label>
+		  <label class="item item-input item-floating-label">
+		    <span class="input-label">Contact Name</span>
+		    <input type="text" placeholder="Contact Name" name="ContactName" ng-model="ContactName" required>
+		  </label>
+		  <label class="item item-input item-floating-label">
+		    <span class="input-label">Contact Number</span>
+		    <input type="text" placeholder="Contact Number" name="ContactNumber" ng-model="ContactNumber" required>
+		  </label>
+		  <label class="item item-input item-floating-label">
+		    <span class="input-label">Alternate Contact Number 1</span>
+		    <input type="text" placeholder="Alternate Contact Number 1" name="AltContact1" ng-model="AltContactNo1" required>
+		  </label>
+		  <label class="item item-input item-floating-label">
+		    <span class="input-label">Alternate Contact Number 2</span>
+		    <input type="text" placeholder="Alternate Contact Number 2" name="AltContact2" ng-model="AltContactNo2">
+		  </label>
+		  <label class="item item-input item-floating-label">
+		    <span class="input-label">Source Type</span>
+		    <input type="text" placeholder="Source Type" ng-model="SourceType" name="SourceType" required>
+		  </label>
+		  <label class="item item-input item-floating-label">
+		    <span class="input-label">Lattitude</span>
+		    <input type="text" placeholder="Lattitude" ng-model="Lattitude" name="Lattitude" required>
+		  </label>
+		  <label class="item item-input item-floating-label">
+		    <span class="input-label">Longitude</span>
+		    <input type="text" placeholder="Longitude" ng-model="Longitude" name="Longitude" required>
+		  </label>
+		  <div class="row FlexHCenter" ng-click="DoRegSrc()">
+			  	<button class="button button-full button-positive"
+			  			ng-dsiabled="RegSourceForm.Address.$pristline || RegSourceForm.Address.$error.required
+									">
+				  Save
+				</button>
+		  </div>
+		 </div>
+	</form>
+	</ion-content>
+</ion-view>

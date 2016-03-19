@@ -1,0 +1,33 @@
+import os.path
+import os
+import time
+import smtplib
+from email.mime.text import MIMEText
+from os import open, remove, close
+
+t = 0
+
+while not os.path.exists("/var/run/shm/Ip.log"):
+        time.sleep(1)
+	t = t + 1
+	print ("Time", t)
+        if(t == 10):
+		break
+
+if os.path.isfile("/var/run/shm/Ip.log"):
+        fp=os.open("/var/run/shm/Ip.log",os.O_RDWR|os.O_CREAT)
+        data = os.read(fp, 60)  
+        os.close(fp)  
+        os.remove("/var/run/shm/Ip.log")
+else:
+	data="Time Out"	
+msg = MIMEText(data)
+msg['Subject'] = 'Email from Pi'
+msg['From'] = "renju.chandrasekharapanicker@honeywell.com"
+msg['To'] = "santhosh.urukonda@honeywell.com;renju.chandrasekharapanicker@honeywell.com;satyajeet.banerjee@honeywell.com;prabhat.ranjan@honeywell.com"
+s = smtplib.SMTP('smtp-secure.honeywell.com')
+
+s.sendmail('renju.chandrasekharsanthosh.urukonda@honeywell.com;renju.chandrasekharapanicker@honeywell.com;satyajeet.banerjee@honeywell.com;prabhat.ranjan@honeywell.comapanicker@honeywell.com', 'santhosh.urukonda@honeywell.com', msg.as_string())
+
+s.quit()
+print ('Sent Data')
